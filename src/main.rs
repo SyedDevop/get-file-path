@@ -1,11 +1,10 @@
 use std::path::Path;
-use std::process;
 use std::process::Command;
 use std::{env, iter};
 
-use clap::{Parser, ValueEnum};
-use rfd::FileDialog;
+use clap::Parser;
 
+use gopa::{ConfigArgs, SelectFile};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct MyArgs {
@@ -18,39 +17,21 @@ struct MyArgs {
     #[arg(last = true)]
     cmd: Vec<String>,
 }
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum SelectFile {
-    /// Select a single File form the file browser.
-    File,
-    /// Select a Folder from the file browser.
-    Folder,
-}
-
 fn main() {
     let selectfile = MyArgs::parse();
 
-    let my_path = pars_select_arg(&selectfile.select);
-    set_directory(&my_path);
+    let my_path = ConfigArgs::new(&selectfile.select);
 
-    let cmd_args = parse_cmd_args(&selectfile.cmd);
-
-    Command::new("cmd")
-        .args(cmd_args)
-        .output()
-        .expect("failed to execute process");
-}
-
-fn pars_select_arg(selectfile: &SelectFile) -> String {
-    let file = match selectfile {
-        SelectFile::Folder => FileDialog::new().pick_folder(),
-        SelectFile::File => FileDialog::new().pick_file(),
-    };
-    if let Some(filepath) = file {
-        filepath.display().to_string()
+    if my_path.is_folder {
+        set_directory(&my_path.path);
+        run_cmd(&selectfile.cmd);
     } else {
-        process::exit(0);
+        set_directory(&my_path.parent_path);
+        let mut new_cmd = selectfile.cmd;
+        new_cmd.push(my_path.path);
+        run_cmd(&new_cmd);
     }
+    // process::exit(0);
 }
 
 /// Set the current directory to give Path.
@@ -62,4 +43,11 @@ fn parse_cmd_args(cmds: &[String]) -> Vec<&str> {
     iter::once("/C")
         .chain(cmds.iter().map(|e| e.as_str()))
         .collect()
+}
+
+fn run_cmd(cmd_list: &[String]) {
+    Command::new("cmd")
+        .args(parse_cmd_args(cmd_list))
+        .spawn()
+        .expect("failed to execute process");
 }
