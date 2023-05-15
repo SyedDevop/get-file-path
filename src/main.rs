@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::process::Command;
+use std::process::{exit, Command};
 use std::{env, iter};
 
 use clap::Parser;
@@ -12,6 +12,9 @@ struct MyArgs {
     #[arg(value_enum)]
     select: SelectFile,
 
+    /// If out it returns the path with out executing
+    #[arg(short, long, default_value_t = false)]
+    out: bool,
     /// commands and it's  arguments to run after changing to the specified directory.
     /// For example, -- ls -al would run the `ls -al`.
     #[arg(last = true)]
@@ -22,6 +25,10 @@ fn main() {
 
     let my_path = ConfigArgs::new(&selectfile.select);
 
+    if selectfile.out {
+        println!("{:}", my_path.path);
+        exit(0);
+    }
     if my_path.is_folder {
         set_directory(&my_path.path);
         run_cmd(&selectfile.cmd);
