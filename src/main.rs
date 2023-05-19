@@ -1,6 +1,4 @@
-use std::path::Path;
-use std::process::{exit, Command};
-use std::{env, iter};
+use std::process::exit;
 
 use clap::Parser;
 
@@ -21,40 +19,19 @@ struct MyArgs {
     cmd: Vec<String>,
 }
 fn main() {
-    let selectfile = MyArgs::parse();
+    let parsed_args = MyArgs::parse();
 
-    let my_path = ConfigArgs::new(&selectfile.select);
+    let config = ConfigArgs::new(&parsed_args.select);
 
-    if selectfile.out {
-        println!("{:}", my_path.path);
+    if parsed_args.out {
+        println!("{:}", config.str_path);
         exit(0);
     }
-    if my_path.is_folder {
-        set_directory(&my_path.path);
-        run_cmd(&selectfile.cmd);
-    } else {
-        set_directory(&my_path.parent_path);
-        let mut new_cmd = selectfile.cmd;
-        new_cmd.push(my_path.path);
-        run_cmd(&new_cmd);
+
+    let mut cmd = parsed_args.cmd;
+    if config.path.is_dir() {
+        cmd.push(config.str_path);
     }
+    ConfigArgs::run_cmd(&cmd)
     // process::exit(0);
-}
-
-/// Set the current directory to give Path.
-fn set_directory(path: &str) {
-    env::set_current_dir(Path::new(path)).expect("Failed to change current directory");
-}
-
-fn parse_cmd_args(cmds: &[String]) -> Vec<&str> {
-    iter::once("/C")
-        .chain(cmds.iter().map(|e| e.as_str()))
-        .collect()
-}
-
-fn run_cmd(cmd_list: &[String]) {
-    Command::new("cmd")
-        .args(parse_cmd_args(cmd_list))
-        .spawn()
-        .expect("failed to execute process");
 }
