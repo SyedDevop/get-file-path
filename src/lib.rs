@@ -36,7 +36,8 @@ impl ConfigArgs {
                 path: filepath,
             }
         } else {
-            process::exit(0);
+            eprintln!("file/folder not selected");
+            process::exit(1);
         }
     }
     /// Set the current directory to give Path.
@@ -60,4 +61,3 @@ impl ConfigArgs {
             .collect()
     }
 }
-
