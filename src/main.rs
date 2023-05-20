@@ -29,7 +29,7 @@ fn main() {
     }
 
     let mut cmd = parsed_args.cmd;
-    if config.path.is_dir() {
+    if config.path.is_file() {
         cmd.push(config.str_path);
     }
     ConfigArgs::run_cmd(&cmd)
